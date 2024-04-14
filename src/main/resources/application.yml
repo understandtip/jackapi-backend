@@ -101,3 +101,6 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.jackqiu.jackapi.controller
+api:
+  client:
+    gateway-host: http://localhost:8102

@@ -7,6 +7,8 @@
 <mapper namespace="com.jackqiu.jackapi.mapper.UserMapper">
     <resultMap id="BaseResultMap" type="com.jackqiu.jackapi.model.entity.User">
         <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="assessKey" column="assessKey" jdbcType="VARCHAR"/>
+        <result property="secretKey" column="secretKey" jdbcType="VARCHAR"/>
         <result property="unionId" column="unionId" jdbcType="VARCHAR"/>
         <result property="mpOpenId" column="mpOpenId" jdbcType="VARCHAR"/>
         <result property="userName" column="userName" jdbcType="VARCHAR"/>
@@ -19,7 +21,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,unionId,mpOpenId,
+        id,unionId,mpOpenId,assessKey,secretKey
         userName,userAvatar,userProfile,
         userRole,createTime,updateTime,isDelete
     </sql>

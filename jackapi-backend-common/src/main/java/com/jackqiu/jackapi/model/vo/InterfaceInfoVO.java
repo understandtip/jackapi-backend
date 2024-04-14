@@ -24,6 +24,11 @@ public class InterfaceInfoVO implements Serializable {
     private String name;
 
     /**
+     * ip地址
+     */
+    private String host;
+
+    /**
      * 接口地址
      */
     private String url;

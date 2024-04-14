@@ -3,3 +3,5 @@ spring:
     name: jackapi-interface\
 server:
   port: 8102
+  servlet:
+    context-path: /api

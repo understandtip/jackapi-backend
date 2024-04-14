@@ -1,7 +1,10 @@
 package com.jackqiu.jackapi.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jackqiu.jackapi.common.ErrorCode;
@@ -9,9 +12,12 @@ import com.jackqiu.jackapi.common.IdRequest;
 import com.jackqiu.jackapi.constant.CommonConstant;
 import com.jackqiu.jackapi.exception.BusinessException;
 import com.jackqiu.jackapi.exception.ThrowUtils;
+import com.jackqiu.jackapi.jackapibackendsdk.config.APIClient;
 import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInfoQueryRequest;
 import com.jackqiu.jackapi.model.entity.InterfaceInfo;
+import com.jackqiu.jackapi.model.entity.User;
 import com.jackqiu.jackapi.model.enums.InterfaceMethodEnum;
+import com.jackqiu.jackapi.model.enums.InterfaceStatusEnum;
 import com.jackqiu.jackapi.model.vo.InterfaceInfoVO;
 import com.jackqiu.jackapi.model.vo.UserVO;
 import com.jackqiu.jackapi.service.InterfaceInfoService;
@@ -22,6 +28,7 @@ import com.jackqiu.jackapi.utils.myJSONUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -40,6 +47,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
     @Resource
     private UserService userService;
 
+    @Value("${api.client.gateway-host}")
+    private String GATEWAY_HOST;
+
     @Override
     public void validInterfaceInfo(InterfaceInfo interfaceInfo, boolean add) {
         if (interfaceInfo == null) {
@@ -48,6 +58,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         Long id = interfaceInfo.getId();
         String name = interfaceInfo.getName();
         String description = interfaceInfo.getDescription();
+        String host = interfaceInfo.getHost();
         String url = interfaceInfo.getUrl();
         String method = interfaceInfo.getMethod();
         String requestParam = interfaceInfo.getRequestParam();
@@ -64,6 +75,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         }
         if (StringUtils.isNotBlank(description) && description.length() > 2000) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "描述过长");
+        }
+        if (StringUtils.isNotBlank(host) && host.length() > 100) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "host过长");
         }
         if (StringUtils.isNotBlank(url) && url.length() > 2000) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "url过长");
@@ -95,6 +109,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         Long id = interfaceInfoQueryRequest.getId();
         String name = interfaceInfoQueryRequest.getName();
         String description = interfaceInfoQueryRequest.getDescription();
+        String host = interfaceInfoQueryRequest.getHost();
         String url = interfaceInfoQueryRequest.getUrl();
         String method = interfaceInfoQueryRequest.getMethod();
         Integer status = interfaceInfoQueryRequest.getStatus();
@@ -105,6 +120,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         if (StringUtils.isNotBlank(name)) {
             queryWrapper.and(qw -> qw.like("name", name).or().like("description", description));
         }
+        queryWrapper.like(StringUtils.isNotBlank(host), "host", host);
         queryWrapper.like(StringUtils.isNotBlank(url), "url", url);
         queryWrapper.like(StringUtils.isNotBlank(method), "method", method);
         queryWrapper.ne(ObjectUtils.isNotEmpty(status), "status", status);
@@ -125,7 +141,8 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
     @Override
     public Page<InterfaceInfoVO> getInterfaceInfoVOPage(Page<InterfaceInfo> interfaceInfoPage, HttpServletRequest request) {
         List<InterfaceInfo> interfaceInfoList = interfaceInfoPage.getRecords();
-        Page<InterfaceInfoVO> interfaceInfoVOPage = new Page<>(interfaceInfoPage.getCurrent(), interfaceInfoPage.getSize(), interfaceInfoPage.getTotal());
+        Page<InterfaceInfoVO> interfaceInfoVOPage = new Page<>(interfaceInfoPage.getCurrent(), interfaceInfoPage.getSize(),
+                interfaceInfoPage.getTotal());
         if (CollUtil.isEmpty(interfaceInfoList)) {
             return interfaceInfoVOPage;
         }
@@ -150,10 +167,24 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         Long interfaceInfoId = interfaceInfoIdRequest.getId();
         InterfaceInfo interfaceInfo = this.getById(interfaceInfoId);
         ThrowUtils.throwIf(interfaceInfo == null, ErrorCode.PARAMS_ERROR);
-        //  c. 调用接口，看是否正常(通过SDK来进行调用)
-
-        //  d. 修改接口状态
-        return null;
+        //  c. 判断接口状态是否是未上线
+        ThrowUtils.throwIf(InterfaceStatusEnum.ON.getValue().equals(interfaceInfo.getStatus()),
+                ErrorCode.PARAMS_ERROR, "该接口已经上线，不能重复上线");
+        //  d. 调用接口，看是否正常(通过SDK来进行调用)
+        User loginUser = userService.getLoginUser(request);
+        String assessKey = loginUser.getAssessKey();
+        String secretKey = loginUser.getSecretKey();
+        String url = interfaceInfo.getUrl();
+        APIClient apiClient = new APIClient(assessKey, secretKey, url, GATEWAY_HOST);
+        HttpResponse result = apiClient.getNameByJson(JSONUtil.toJsonStr("jackqiu"));
+        ThrowUtils.throwIf(result.getStatus() != 200, ErrorCode.PARAMS_ERROR, "该接口不能正常调用 或者 请求方式错误");
+        //  e. 修改接口状态
+        UpdateWrapper<InterfaceInfo> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", interfaceInfoId);
+        updateWrapper.set("status", 1);
+        boolean update = this.update(updateWrapper);
+        ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR);
+        return update;
     }
 }
 
