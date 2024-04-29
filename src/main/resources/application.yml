@@ -1,6 +1,4 @@
 # 公共配置文件
-# @author <a href="https://github.com/liyupi">程序员鱼皮</a>
-# @from <a href="https://yupi.icu">编程导航知识星球</a>
 spring:
   application:
     name: jackapi-backend
@@ -103,4 +101,14 @@ knife4j:
           - com.jackqiu.jackapi.controller
 api:
   client:
-    gateway-host: http://localhost:8102
+    gateway-host: http://localhost:9000
+
+dubbo:
+  application:
+    name: dubbo-springboot-provider
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    id: provider
+    address: nacos://192.168.59.130:8848

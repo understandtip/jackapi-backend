@@ -1,0 +1,29 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: gateway
+        uri: http://localhost:8102
+        predicates:
+          - Path=/api/**
+
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gateway: trace
+
+server:
+  port: 9000
+
+dubbo:
+  application:
+    name: dubbo-springboot-consumer
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    id: consumer
+    address: nacos://192.168.59.130:8848
+
