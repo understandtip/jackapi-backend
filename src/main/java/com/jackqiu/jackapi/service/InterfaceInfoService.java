@@ -57,4 +57,12 @@ public interface InterfaceInfoService extends IService<InterfaceInfo> {
      * @return
      */
     Boolean onlineInterfaceInfo(IdRequest interfaceInfoIdRequest, HttpServletRequest request);
+
+    /**
+     * 下线接口
+     * @param interfaceInfoIdRequest
+     * @param request
+     * @return
+     */
+    Boolean offlineInterfaceInfo(IdRequest interfaceInfoIdRequest, HttpServletRequest request);
 }

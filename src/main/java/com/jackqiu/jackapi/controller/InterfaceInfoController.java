@@ -45,11 +45,28 @@ public class InterfaceInfoController {
      * @return
      */
     @PostMapping("/online")
-    public BaseResponse<Boolean> onlineInterfaceInfo(IdRequest interfaceInfoIdRequest, HttpServletRequest request) {
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> onlineInterfaceInfo(@RequestBody IdRequest interfaceInfoIdRequest, HttpServletRequest request) {
         if (interfaceInfoIdRequest == null || interfaceInfoIdRequest.getId() < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         Boolean flag =  interfaceInfoService.onlineInterfaceInfo(interfaceInfoIdRequest, request);
+        return ResultUtils.success(flag);
+    }
+
+    /**
+     * 下线接口
+     * @param interfaceInfoIdRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/offline")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> offlineInterfaceInfo(@RequestBody IdRequest interfaceInfoIdRequest, HttpServletRequest request) {
+        if (interfaceInfoIdRequest == null || interfaceInfoIdRequest.getId() < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Boolean flag =  interfaceInfoService.offlineInterfaceInfo(interfaceInfoIdRequest, request);
         return ResultUtils.success(flag);
     }
 
@@ -143,6 +160,24 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         return ResultUtils.success(interfaceInfoService.getInterfaceInfoVO(interfaceInfo, request));
+    }
+
+    /**
+     * 根据 id 获取
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/get")
+    public BaseResponse<InterfaceInfo> getInterfaceInfoById(long id, HttpServletRequest request) {
+        if (id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
+        if (interfaceInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        return ResultUtils.success(interfaceInfo);
     }
 
     /**

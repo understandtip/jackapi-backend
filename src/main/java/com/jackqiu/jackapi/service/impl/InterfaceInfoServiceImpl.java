@@ -163,6 +163,10 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
      */
     @Override
     public Boolean onlineInterfaceInfo(IdRequest interfaceInfoIdRequest, HttpServletRequest request) {
+        //校验参数
+        if (interfaceInfoIdRequest == null || interfaceInfoIdRequest.getId() < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         //  b. 查询接口是否存在
         Long interfaceInfoId = interfaceInfoIdRequest.getId();
         InterfaceInfo interfaceInfo = this.getById(interfaceInfoId);
@@ -176,7 +180,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         String secretKey = loginUser.getSecretKey();
         String url = interfaceInfo.getUrl();
         APIClient apiClient = new APIClient(assessKey, secretKey, url, GATEWAY_HOST);
-        HttpResponse result = apiClient.getNameByJson(JSONUtil.toJsonStr("jackqiu"));
+        HttpResponse result = apiClient.getNameByJson(JSONUtil.toJsonStr("jackqiu"));//TODO: 1
         ThrowUtils.throwIf(result.getStatus() != 200, ErrorCode.PARAMS_ERROR, "该接口不能正常调用 或者 请求方式错误");
         //  e. 修改接口状态
         UpdateWrapper<InterfaceInfo> updateWrapper = new UpdateWrapper<>();
@@ -185,6 +189,33 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         boolean update = this.update(updateWrapper);
         ThrowUtils.throwIf(!update, ErrorCode.SYSTEM_ERROR);
         return update;
+    }
+
+    /**
+     * 下线接口
+     * @param interfaceInfoIdRequest
+     * @param request
+     * @return
+     */
+    @Override
+    public Boolean offlineInterfaceInfo(IdRequest interfaceInfoIdRequest, HttpServletRequest request) {
+        //校验参数
+        if (interfaceInfoIdRequest == null || interfaceInfoIdRequest.getId() < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //    ⅰ. 判断接口是否存在
+        Long interfaceInfoId = interfaceInfoIdRequest.getId();
+        InterfaceInfo interfaceInfo = this.getById(interfaceInfoId);
+        ThrowUtils.throwIf(interfaceInfo == null, ErrorCode.SYSTEM_ERROR, "对应数据不存在");
+        //    ⅱ. 接口状态需要为在线
+        if (interfaceInfo.getStatus() != 1) {
+            return true;
+        }
+        //    ⅲ. 修改接口状态
+        interfaceInfo.setStatus(0);
+        boolean flag = this.updateById(interfaceInfo);
+        ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR);
+        return flag;
     }
 }
 
