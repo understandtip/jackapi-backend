@@ -1,6 +1,6 @@
 package com.jackqiu.jackapi.jackapiinterface.controller;
 
-import org.apache.catalina.User;
+import lombok.Data;
 import org.springframework.web.bind.annotation.*;
 
 @RequestMapping("/name")
@@ -27,7 +27,8 @@ public class UserController {
      * json请求
      */
     @PostMapping("/json")
-    public String getNameByJson(@RequestBody String name) {
-        return "结果是" + name;
+    public String getNameByJson(@RequestBody User user) {
+        return "结果是" + user.getUserName();
     }
+
 }

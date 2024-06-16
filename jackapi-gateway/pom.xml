@@ -58,6 +58,20 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.jackqiu.jackapi</groupId>
+			<artifactId>jackapi-backend-common</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jackqiu.jackapi</groupId>
+			<artifactId>jackapi-backend-sdk</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<!--<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>-->
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>

@@ -108,7 +108,7 @@ dubbo:
     name: dubbo-springboot-provider
   protocol:
     name: dubbo
-    port: -1
+    port: 1
   registry:
     id: provider
     address: nacos://192.168.59.130:8848

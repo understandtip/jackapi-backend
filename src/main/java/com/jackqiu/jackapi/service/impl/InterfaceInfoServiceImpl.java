@@ -14,14 +14,17 @@ import com.jackqiu.jackapi.exception.BusinessException;
 import com.jackqiu.jackapi.exception.ThrowUtils;
 import com.jackqiu.jackapi.jackapibackendsdk.config.APIClient;
 import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInfoQueryRequest;
+import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInvokeRequest;
 import com.jackqiu.jackapi.model.entity.InterfaceInfo;
 import com.jackqiu.jackapi.model.entity.User;
+import com.jackqiu.jackapi.model.entity.UserInterfaceInfo;
 import com.jackqiu.jackapi.model.enums.InterfaceMethodEnum;
 import com.jackqiu.jackapi.model.enums.InterfaceStatusEnum;
 import com.jackqiu.jackapi.model.vo.InterfaceInfoVO;
 import com.jackqiu.jackapi.model.vo.UserVO;
 import com.jackqiu.jackapi.service.InterfaceInfoService;
 import com.jackqiu.jackapi.mapper.InterfaceInfoMapper;
+import com.jackqiu.jackapi.service.UserInterfaceInfoService;
 import com.jackqiu.jackapi.service.UserService;
 import com.jackqiu.jackapi.utils.SqlUtils;
 import com.jackqiu.jackapi.utils.myJSONUtil;
@@ -49,6 +52,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
 
     @Value("${api.client.gateway-host}")
     private String GATEWAY_HOST;
+
+    @Resource
+    private UserInterfaceInfoService userInterfaceInfoService;
 
     @Override
     public void validInterfaceInfo(InterfaceInfo interfaceInfo, boolean add) {
@@ -180,7 +186,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         String secretKey = loginUser.getSecretKey();
         String url = interfaceInfo.getUrl();
         APIClient apiClient = new APIClient(assessKey, secretKey, url, GATEWAY_HOST);
-        HttpResponse result = apiClient.getNameByJson(JSONUtil.toJsonStr("jackqiu"));//TODO: 1
+        //TODO 动态根据请求url调用不同的方法
+        String uri = request.getRequestURI();
+        HttpResponse result = apiClient.getNameByJson(JSONUtil.toJsonStr("jackqiu"));
         ThrowUtils.throwIf(result.getStatus() != 200, ErrorCode.PARAMS_ERROR, "该接口不能正常调用 或者 请求方式错误");
         //  e. 修改接口状态
         UpdateWrapper<InterfaceInfo> updateWrapper = new UpdateWrapper<>();
@@ -216,6 +224,55 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         boolean flag = this.updateById(interfaceInfo);
         ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR);
         return flag;
+    }
+
+    /**
+     * 调用接口
+     * @param interfaceInvokeRequest
+     * @param request
+     * @return
+     */
+    @Override
+    public String callInterface(InterfaceInvokeRequest interfaceInvokeRequest, HttpServletRequest request) {
+        //  a. 判空
+        Long id = interfaceInvokeRequest.getId();
+        String param = interfaceInvokeRequest.getParam();
+        if (id == null || id < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求id有误");
+        }
+        //  b. 判断接口是否存在
+        InterfaceInfo interfaceInfo = this.getById(id);
+        ThrowUtils.throwIf(interfaceInfo == null, ErrorCode.SYSTEM_ERROR);
+        //  c. 判断接口状态（判断接口是否是开启状态）
+        Integer status = interfaceInfo.getStatus();
+        if (InterfaceStatusEnum.OFF.getValue().equals(status)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "无法调用关闭状态的接口");
+        }
+        //  判断是否有调用权限
+        User loginUser = userService.getLoginUser(request);
+        QueryWrapper<UserInterfaceInfo> queryWrapper = new QueryWrapper<>();
+        Long userId = loginUser.getId();
+        queryWrapper.eq("userId", userId);
+        Long interfaceInfoId = interfaceInfo.getId();
+        queryWrapper.eq("interfaceInfoId", interfaceInfoId);
+        List<UserInterfaceInfo> list = userInterfaceInfoService.list(queryWrapper);
+        ThrowUtils.throwIf(list.size() != 1, ErrorCode.NO_AUTH_ERROR, "请先开通权限");
+        UserInterfaceInfo userInterfaceInfo = list.get(0);
+        ThrowUtils.throwIf(userInterfaceInfo.getLeftNum() <= 0, ErrorCode.NO_AUTH_ERROR, "调用次数超出上线");
+        //  d. 调用接口（利用用户的assessKey和sercetKey）
+        String assessKey = loginUser.getAssessKey();
+        String secretKey = loginUser.getSecretKey();
+        APIClient apiClient = new APIClient(assessKey, secretKey, interfaceInfo.getUrl(), GATEWAY_HOST);
+        //TODO 动态根据请求url调用不同的方法
+        HttpResponse httpResponse = apiClient.getNameByJson(JSONUtil.toJsonStr(param));
+        System.out.println(httpResponse);
+        ThrowUtils.throwIf(httpResponse.getStatus() != 200, ErrorCode.SYSTEM_ERROR, "接口无法调用");
+        //  成功调用之后，将调用次数减一
+        synchronized (String.valueOf(userId).intern()) {
+            Boolean flag = userInterfaceInfoService.invokeCountDown(userId, interfaceInfoId);
+            ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "调用失败");
+        }
+        return httpResponse.body();
     }
 }
 

@@ -6,10 +6,7 @@ import com.jackqiu.jackapi.common.*;
 import com.jackqiu.jackapi.constant.UserConstant;
 import com.jackqiu.jackapi.exception.BusinessException;
 import com.jackqiu.jackapi.exception.ThrowUtils;
-import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInfoAddRequest;
-import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInfoEditRequest;
-import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInfoQueryRequest;
-import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInfoUpdateRequest;
+import com.jackqiu.jackapi.model.dto.interfaceInfo.*;
 import com.jackqiu.jackapi.model.entity.InterfaceInfo;
 import com.jackqiu.jackapi.model.entity.User;
 import com.jackqiu.jackapi.model.vo.InterfaceInfoVO;
@@ -22,11 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
-/**
- * 帖子接口
- *
- *  
- */
 @RestController
 @RequestMapping("/interfaceInfo")
 @Slf4j
@@ -68,6 +60,21 @@ public class InterfaceInfoController {
         }
         Boolean flag =  interfaceInfoService.offlineInterfaceInfo(interfaceInfoIdRequest, request);
         return ResultUtils.success(flag);
+    }
+
+    /**
+     * 调用接口
+     * @param interfaceInvokeRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/invoke")
+    public BaseResponse<String> callInterface(@RequestBody InterfaceInvokeRequest interfaceInvokeRequest, HttpServletRequest request) {
+        if (interfaceInvokeRequest == null || interfaceInvokeRequest.getId() == null || interfaceInvokeRequest.getId() < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String result = interfaceInfoService.callInterface(interfaceInvokeRequest, request);
+        return ResultUtils.success(result);
     }
 
     // region 增删改查

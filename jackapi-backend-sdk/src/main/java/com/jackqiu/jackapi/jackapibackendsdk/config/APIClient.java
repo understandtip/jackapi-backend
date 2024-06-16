@@ -1,5 +1,6 @@
 package com.jackqiu.jackapi.jackapibackendsdk.config;
 
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
@@ -7,7 +8,9 @@ import cn.hutool.http.server.HttpServerRequest;
 import cn.hutool.http.server.HttpServerResponse;
 import cn.hutool.json.JSONUtil;
 import com.jackqiu.jackapi.jackapibackendsdk.utils.SignUtil;
+import com.jackqiu.jackapi.model.entity.User;
 
+import java.net.URI;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -69,14 +72,16 @@ public class APIClient {
         //sign 签名
         map.put("sign" , SignUtil.getSign(secretKey, body));
         //nonce 随机数
-        map.put("nonce" , String.valueOf(new Random().nextInt(10000)));
+        map.put("nonce" , RandomUtil.randomNumbers(4));
         //timestamp 时间戳
         map.put("timestamp" ,String.valueOf(System.currentTimeMillis() / 1000));
         return map;
     }
 
     public HttpResponse getNameByJson(String name) {
-        String json = JSONUtil.toJsonStr(name);
+        User user = new User();
+        user.setUserName(name);
+        String json = JSONUtil.toJsonStr(user);
         System.out.println(json);
         HttpResponse result = HttpRequest.post(GATEWAY_HOST + url)
                         .addHeaders(getRequestMap(json))

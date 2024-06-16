@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jackqiu.jackapi.common.IdRequest;
 import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInfoQueryRequest;
+import com.jackqiu.jackapi.model.dto.interfaceInfo.InterfaceInvokeRequest;
 import com.jackqiu.jackapi.model.entity.InterfaceInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jackqiu.jackapi.model.vo.InterfaceInfoVO;
@@ -65,4 +66,12 @@ public interface InterfaceInfoService extends IService<InterfaceInfo> {
      * @return
      */
     Boolean offlineInterfaceInfo(IdRequest interfaceInfoIdRequest, HttpServletRequest request);
+
+    /**
+     * 调用接口
+     * @param interfaceInvokeRequest
+     * @param request
+     * @return
+     */
+    String callInterface(InterfaceInvokeRequest interfaceInvokeRequest, HttpServletRequest request);
 }

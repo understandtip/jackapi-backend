@@ -13,8 +13,8 @@ import java.util.stream.Collectors;
  */
 public enum InterfaceStatusEnum {
 
-    OFF("用户", 0),
-    ON("管理员", 1);
+    OFF("关闭", 0),
+    ON("开启", 1);
 
     private final String text;
 
